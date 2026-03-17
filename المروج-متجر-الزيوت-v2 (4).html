@@ -1371,3 +1371,537 @@ startOfferAnimation();
 </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المروج V3 | نظام إدارة المتجر المتكامل</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f; --bg2: #12121a; --bg3: #1a1a26;
+            --gold: #d4a853; --gold2: #f0c96b;
+            --green: #1e6b3c; --green2: #2d9653;
+            --text: #f0ece0; --text2: #b8b0a0;
+            --red: #e63946; --violet: #7c3aed;
+            --card-bg: #15151f;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Cairo', sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* --- Header & Search --- */
+        header {
+            background: var(--bg2);
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 2px solid var(--gold);
+        }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .logo { font-weight: 900; font-size: 1.5rem; color: var(--gold); text-decoration: none; }
+        
+        .search-container { position: relative; width: 100%; }
+        .search-input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 12px;
+            border: 1px solid var(--bg3);
+            background: var(--bg3);
+            color: white;
+            font-family: inherit;
+            outline: none;
+        }
+
+        /* --- Tabs --- */
+        .tabs-container {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            padding: 10px 0;
+            scrollbar-width: none;
+        }
+        .tab-btn {
+            white-space: nowrap;
+            padding: 8px 20px;
+            border-radius: 20px;
+            background: var(--bg3);
+            color: var(--text2);
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: 0.3s;
+        }
+        .tab-btn.active {
+            background: var(--gold);
+            color: var(--bg);
+            font-weight: bold;
+        }
+
+        /* --- Product Cards --- */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
+            padding: 15px;
+        }
+        .product-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid var(--bg3);
+            transition: 0.3s;
+        }
+        .product-card:hover { transform: translateY(-5px); border-color: var(--gold); }
+        .product-img { width: 100%; height: 180px; object-fit: cover; }
+        .product-info { padding: 12px; }
+        .price-tag { color: var(--gold2); font-weight: bold; font-size: 1.1rem; }
+        
+        .wishlist-btn {
+            position: absolute;
+            top: 10px; left: 10px;
+            background: rgba(0,0,0,0.5);
+            border: none; border-radius: 50%;
+            width: 35px; height: 35px;
+            color: white; cursor: pointer;
+            z-index: 10;
+        }
+        .wishlist-btn.active { color: var(--red); }
+
+        /* --- Floating Actions --- */
+        .fab-container {
+            position: fixed;
+            bottom: 20px; right: 20px;
+            display: flex; flex-direction: column; gap: 10px;
+            z-index: 999;
+        }
+        .fab {
+            width: 55px; height: 55px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            cursor: pointer; border: none;
+            text-decoration: none;
+        }
+        .btn-cart { background: var(--gold); position: relative; }
+        .btn-admin { background: var(--violet); }
+        .cart-count {
+            position: absolute; top: 0; right: 0;
+            background: var(--red); font-size: 12px;
+            padding: 2px 6px; border-radius: 10px;
+        }
+
+        /* --- Admin Panel Modal --- */
+        .modal {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            display: none;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .modal-content {
+            background: var(--bg2);
+            max-width: 600px; margin: 0 auto;
+            border-radius: 20px; padding: 25px;
+            border: 1px solid var(--gold);
+        }
+        .admin-form input, .admin-form select, .admin-form textarea {
+            width: 100%; padding: 12px; margin: 8px 0;
+            background: var(--bg3); border: 1px solid #333;
+            color: white; border-radius: 8px; font-family: inherit;
+        }
+        .btn-save {
+            background: var(--green); color: white;
+            width: 100%; padding: 15px; border: none;
+            border-radius: 10px; font-weight: bold; cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* --- Cart Drawer --- */
+        .cart-drawer {
+            position: fixed; left: 0; top: 0; bottom: 0; width: 320px;
+            background: var(--bg2); z-index: 3000;
+            transform: translateX(-100%);
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 20px; display: flex; flex-direction: column;
+            border-right: 1px solid var(--gold);
+        }
+        .cart-drawer.open { transform: translateX(0); }
+
+        .hidden { display: none; }
+        .toast {
+            position: fixed; bottom: 100px; left: 50%;
+            transform: translateX(-50%);
+            background: var(--green2); padding: 10px 25px;
+            border-radius: 30px; display: none; z-index: 5000;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-top">
+        <a href="#" class="logo">المروج 🌿</a>
+        <div id="wishlist-status" style="cursor:pointer" onclick="showWishlist()">❤️ المفضلة</div>
+    </div>
+    <div class="search-container">
+        <input type="text" class="search-input" id="searchInput" placeholder="ابحث عن زيت (شعر، بشرة، زيت زيتون...)" oninput="handleSearch()">
+    </div>
+    <div class="tabs-container" id="tabsBox"></div>
+</header>
+
+<main>
+    <div id="activeCategoryName" style="padding: 15px 15px 0; color: var(--gold); font-weight: bold; font-size: 1.2rem;"></div>
+    <div class="products-grid" id="productsGrid"></div>
+</main>
+
+<div class="fab-container">
+    <button class="fab btn-admin" onclick="openAdmin()">⚙️</button>
+    <button class="fab btn-cart" onclick="toggleCart()">
+        🛒 <span class="cart-count" id="cartCount">0</span>
+    </button>
+</div>
+
+<div id="cartDrawer" class="cart-drawer">
+    <h2 style="color: var(--gold)">سلة المشتريات</h2>
+    <hr style="margin:15px 0; opacity:0.1">
+    <div id="cartItems" style="flex:1; overflow-y:auto"></div>
+    <div class="cart-summary">
+        <input type="text" id="couponInput" oninput="renderCart()" placeholder="كود الخصم (MAROOG10)" style="width:100%; padding:10px; margin-bottom:10px; background:#1a1a26; color:white; border:1px solid #333; border-radius: 8px;">
+        <div id="totalPrice" style="font-size:1.2rem; margin-bottom:10px; font-weight: bold;">الإجمالي: 0 ج.م</div>
+        <button class="btn-save" onclick="checkoutWA()">إتمام الطلب عبر واتساب</button>
+        <button onclick="toggleCart()" style="width:100%; background:none; color:var(--text2); border:none; margin-top:10px; cursor:pointer">إغلاق السلة</button>
+    </div>
+</div>
+
+<div id="adminModal" class="modal">
+    <div class="modal-content">
+        <div id="loginArea">
+            <h3>تسجيل دخول المدير</h3>
+            <p style="font-size: 0.8rem; color: var(--text2); margin-bottom: 10px;">ادخل الباسورد للتحكم في المتجر</p>
+            <input type="password" id="adminPass" placeholder="كلمة المرور">
+            <button class="btn-save" onclick="checkAdmin()">دخول</button>
+            <button onclick="closeAdmin()" style="width:100%; background:none; color:var(--text2); border:none; margin-top:10px; cursor:pointer">إلغاء</button>
+        </div>
+        
+        <div id="adminArea" class="hidden">
+            <h3 style="color: var(--gold)">لوحة تحكم المتجر</h3>
+            <div style="display:flex; gap:10px; margin: 15px 0;">
+                <button id="tabProds" onclick="switchAdminTab('prods')" class="tab-btn active">إدارة المنتجات</button>
+                <button id="tabCats" onclick="switchAdminTab('cats')" class="tab-btn">إدارة الأقسام</button>
+            </div>
+
+            <div id="adminProds">
+                <div class="admin-form">
+                    <input type="text" id="pTitle" placeholder="اسم المنتج">
+                    <input type="text" id="pImage" placeholder="رابط صورة المنتج">
+                    <input type="number" id="pPrice" placeholder="السعر">
+                    <select id="pCat"></select>
+                    <textarea id="pDesc" placeholder="وصف سريع للمنتج"></textarea>
+                    <button class="btn-save" onclick="saveProduct()">إضافة المنتج للمتجر</button>
+                </div>
+                <hr style="margin:20px 0; opacity: 0.2;">
+                <div id="adminProdsList"></div>
+            </div>
+
+            <div id="adminCats" class="hidden">
+                <div class="admin-form">
+                    <input type="text" id="catName" placeholder="اسم القسم الجديد">
+                    <button class="btn-save" onclick="addCategory()">إضافة القسم</button>
+                </div>
+                <div id="adminCatsList" style="margin-top:20px"></div>
+            </div>
+            
+            <button class="btn-save" onclick="closeAdmin()" style="background: var(--bg3)">خروج من الإعدادات</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast">تم الإجراء بنجاح!</div>
+
+<script>
+// --- البيانات الأساسية ---
+let SECTIONS = JSON.parse(localStorage.getItem('sections')) || [
+    {id: 'all', name: 'الكل'},
+    {id: 'hair', name: 'زيوت الشعر'},
+    {id: 'body', name: 'زيوت الجسم'}
+];
+
+let PRODUCTS = JSON.parse(localStorage.getItem('products')) || [
+    {id: 1, cat: 'hair', title: 'زيت الأرجان المغربي', price: 150, img: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=300', desc: 'أصلي 100% لتنعيم الشعر'},
+    {id: 2, cat: 'body', title: 'زيت جوز الهند البكر', price: 120, img: 'https://images.unsplash.com/photo-1590439471364-192aa70c0b53?w=300', desc: 'مرطب طبيعي رائع للجسم'}
+];
+
+let CART = [];
+let WISHLIST = JSON.parse(localStorage.getItem('wishlist')) || [];
+let activeTab = 'all';
+
+function init() {
+    renderTabs();
+    renderProducts();
+    updateCartCount();
+    populateCatSelect();
+}
+
+// --- العرض ---
+function renderTabs() {
+    const box = document.getElementById('tabsBox');
+    box.innerHTML = SECTIONS.map(s => `
+        <div class="tab-btn ${activeTab === s.id ? 'active' : ''}" onclick="filterCat('${s.id}')">
+            ${s.name}
+        </div>
+    `).join('');
+}
+
+function renderProducts(items = PRODUCTS) {
+    const grid = document.getElementById('productsGrid');
+    const filtered = activeTab === 'all' ? items : items.filter(p => p.cat === activeTab);
+    
+    if(filtered.length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:50px; color:var(--text3)">لا يوجد منتجات في هذا القسم حالياً</div>`;
+    } else {
+        grid.innerHTML = filtered.map(p => `
+            <div class="product-card">
+                <button class="wishlist-btn ${WISHLIST.includes(p.id) ? 'active' : ''}" onclick="toggleWish(${p.id})">❤️</button>
+                <img src="${p.img}" class="product-img" alt="${p.title}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
+                <div class="product-info">
+                    <div style="font-size:0.8rem; color:var(--gold)">${SECTIONS.find(s=>s.id===p.cat)?.name || ''}</div>
+                    <div style="font-weight:bold; height: 50px; overflow: hidden;">${p.title}</div>
+                    <div class="price-tag">${p.price} ج.م</div>
+                    <button onclick="addToCart(${p.id})" style="width:100%; padding:10px; margin-top:10px; background:var(--green); border:none; color:white; border-radius:8px; cursor:pointer; font-weight:bold">إضافة للسلة</button>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    const currentCat = SECTIONS.find(s=>s.id===activeTab);
+    document.getElementById('activeCategoryName').textContent = currentCat ? currentCat.name : "";
+}
+
+function filterCat(id) {
+    activeTab = id;
+    renderTabs();
+    renderProducts();
+}
+
+function handleSearch() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    const filtered = PRODUCTS.filter(p => 
+        p.title.toLowerCase().includes(query) || 
+        p.desc.toLowerCase().includes(query)
+    );
+    renderProducts(filtered);
+}
+
+// --- المفضلة ---
+function toggleWish(id) {
+    if(WISHLIST.includes(id)) {
+        WISHLIST = WISHLIST.filter(i => i !== id);
+    } else {
+        WISHLIST.push(id);
+    }
+    localStorage.setItem('wishlist', JSON.stringify(WISHLIST));
+    renderProducts();
+    showToast("تم تحديث المفضلة");
+}
+
+function showWishlist() {
+    const items = PRODUCTS.filter(p => WISHLIST.includes(p.id));
+    activeTab = 'wishlist';
+    renderProducts(items);
+    document.getElementById('activeCategoryName').textContent = "قائمة المفضلة ❤️";
+}
+
+// --- السلة ---
+function addToCart(id) {
+    const prod = PRODUCTS.find(p => p.id === id);
+    CART.push({...prod, cartId: Date.now()});
+    updateCartCount();
+    showToast("تمت الإضافة للسلة");
+}
+
+function updateCartCount() {
+    document.getElementById('cartCount').textContent = CART.length;
+    renderCart();
+}
+
+function renderCart() {
+    const box = document.getElementById('cartItems');
+    let total = 0;
+    
+    if(CART.length === 0) {
+        box.innerHTML = `<p style="text-align:center; padding:20px; color:var(--text3)">السلة فارغة..</p>`;
+    } else {
+        box.innerHTML = CART.map((item, index) => {
+            total += item.price;
+            return `
+                <div style="display:flex; gap:10px; margin-bottom:15px; background:var(--bg3); padding:10px; border-radius:10px; align-items:center">
+                    <img src="${item.img}" style="width:50px; height:50px; border-radius:5px; object-fit:cover">
+                    <div style="flex:1">
+                        <div style="font-size:0.9rem; font-weight:bold">${item.title}</div>
+                        <div style="color:var(--gold)">${item.price} ج.م</div>
+                    </div>
+                    <button onclick="removeFromCart(${index})" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:1.2rem">🗑️</button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    const coupon = document.getElementById('couponInput').value.trim();
+    if(coupon === 'MAROOG10') {
+        total *= 0.9;
+        document.getElementById('totalPrice').innerHTML = `الإجمالي: <span style="text-decoration:line-through; font-size:0.8rem">${(total/0.9).toFixed(2)}</span> ${total.toFixed(2)} ج.م (خصم 10%)`;
+    } else {
+        document.getElementById('totalPrice').textContent = `الإجمالي: ${total.toFixed(2)} ج.م`;
+    }
+}
+
+function removeFromCart(index) {
+    CART.splice(index, 1);
+    updateCartCount();
+}
+
+function toggleCart() {
+    document.getElementById('cartDrawer').classList.toggle('open');
+}
+
+function checkoutWA() {
+    if(CART.length === 0) return alert("السلة فارغة");
+    let msg = "طلب جديد من متجر المروج 🌿\n";
+    msg += "--------------------------\n";
+    CART.forEach((item, i) => msg += `${i+1}- ${item.title} (${item.price} ج.م)\n`);
+    msg += "--------------------------\n";
+    msg += `إجمالي الطلب: ${document.getElementById('totalPrice').textContent}\n`;
+    msg += "\nأرجو تأكيد الطلب وتحديد موعد التوصيل.";
+    
+    const phone = "201000000000"; // ضعي رقمك هنا
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+// --- لوحة التحكم ---
+function openAdmin() { document.getElementById('adminModal').style.display = 'block'; }
+function closeAdmin() { 
+    document.getElementById('adminModal').style.display = 'none';
+    document.getElementById('adminArea').classList.add('hidden');
+    document.getElementById('loginArea').classList.remove('hidden');
+    document.getElementById('adminPass').value = "";
+}
+
+function checkAdmin() {
+    if(document.getElementById('adminPass').value === 'admin123') {
+        document.getElementById('loginArea').classList.add('hidden');
+        document.getElementById('adminArea').classList.remove('hidden');
+        renderAdminLists();
+    } else {
+        alert("كلمة المرور خطأ!");
+    }
+}
+
+function switchAdminTab(type) {
+    document.getElementById('adminProds').classList.toggle('hidden', type !== 'prods');
+    document.getElementById('adminCats').classList.toggle('hidden', type !== 'cats');
+    document.getElementById('tabProds').classList.toggle('active', type === 'prods');
+    document.getElementById('tabCats').classList.toggle('active', type === 'cats');
+}
+
+function saveProduct() {
+    const title = document.getElementById('pTitle').value;
+    const price = document.getElementById('pPrice').value;
+    if(!title || !price) return alert("الاسم والسعر مطلوبين");
+
+    const newP = {
+        id: Date.now(),
+        title: title,
+        img: document.getElementById('pImage').value || 'https://via.placeholder.com/300',
+        price: Number(price),
+        cat: document.getElementById('pCat').value,
+        desc: document.getElementById('pDesc').value
+    };
+    
+    PRODUCTS.push(newP);
+    localStorage.setItem('products', JSON.stringify(PRODUCTS));
+    renderProducts();
+    renderAdminLists();
+    showToast("تم إضافة المنتج بنجاح");
+    // مسح الحقول
+    document.getElementById('pTitle').value = "";
+    document.getElementById('pPrice').value = "";
+}
+
+function deleteProduct(id) {
+    if(!confirm("هل أنت متأكد من حذف هذا المنتج؟")) return;
+    PRODUCTS = PRODUCTS.filter(p => p.id !== id);
+    localStorage.setItem('products', JSON.stringify(PRODUCTS));
+    renderProducts();
+    renderAdminLists();
+}
+
+function addCategory() {
+    const name = document.getElementById('catName').value;
+    if(!name) return;
+    SECTIONS.push({ id: 'cat_' + Date.now(), name: name });
+    localStorage.setItem('sections', JSON.stringify(SECTIONS));
+    renderTabs();
+    populateCatSelect();
+    renderAdminLists();
+    document.getElementById('catName').value = "";
+}
+
+function deleteCategory(id) {
+    if(id === 'all') return alert("لا يمكن حذف هذا القسم");
+    if(!confirm("سيتم حذف القسم والمنتجات التابعة له، هل أنت متأكد؟")) return;
+    SECTIONS = SECTIONS.filter(s => s.id !== id);
+    PRODUCTS = PRODUCTS.filter(p => p.cat !== id);
+    localStorage.setItem('sections', JSON.stringify(SECTIONS));
+    localStorage.setItem('products', JSON.stringify(PRODUCTS));
+    renderTabs();
+    renderProducts();
+    renderAdminLists();
+}
+
+function renderAdminLists() {
+    const pList = document.getElementById('adminProdsList');
+    pList.innerHTML = '<h4 style="margin-bottom:10px">قائمة المنتجات:</h4>' + PRODUCTS.map(p => `
+        <div style="display:flex; justify-content:space-between; background:var(--bg3); padding:10px; border-radius:8px; margin-bottom:5px; align-items:center">
+            <span>${p.title}</span>
+            <button onclick="deleteProduct(${p.id})" style="color:var(--red); background:none; border:1px solid var(--red); padding:3px 8px; border-radius:5px; cursor:pointer">حذف</button>
+        </div>
+    `).join('');
+
+    const cList = document.getElementById('adminCatsList');
+    cList.innerHTML = '<h4 style="margin-bottom:10px">قائمة الأقسام:</h4>' + SECTIONS.map(s => `
+        <div style="display:flex; justify-content:space-between; background:var(--bg3); padding:10px; border-radius:8px; margin-bottom:5px; align-items:center">
+            <span>${s.name}</span>
+            ${s.id !== 'all' ? `<button onclick="deleteCategory('${s.id}')" style="color:var(--red); background:none; border:1px solid var(--red); padding:3px 8px; border-radius:5px; cursor:pointer">حذف</button>` : ''}
+        </div>
+    `).join('');
+}
+
+function populateCatSelect() {
+    const select = document.getElementById('pCat');
+    select.innerHTML = SECTIONS.filter(s=>s.id!=='all').map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+}
+
+function showToast(m) {
+    const t = document.getElementById('toast');
+    t.textContent = m;
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 2500);
+}
+
+init();
+</script>
+
+</body>
+</html>
